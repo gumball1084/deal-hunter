@@ -85,7 +85,7 @@ async function fetchFacebookListings(searchTerm) {
 
     // Call Apify Facebook Marketplace scraper
 const runResponse = await axios.post(
-  `https://api.apify.com/v2/acts/curious_coder~facebook-marketplace/runs?token=${settings.apifyToken}`,
+  `https://api.apify.com/v2/acts/crawlerbros~facebook-marketplace-scraper/runs?token=${settings.apifyToken}`,
   {
     urls: [marketplaceUrl],
     maxItems: 50,
@@ -100,7 +100,7 @@ const runResponse = await axios.post(
     for (let i = 0; i < 12; i++) {
       await new Promise(r => setTimeout(r, 5000));
       const statusRes = await axios.get(
-        `https://api.apify.com/v2/acts/apify~facebook-marketplace-scraper/runs/${runId}?token=${settings.apifyToken}`
+        `https://api.apify.com/v2/acts/crawlerbros~facebook-marketplace-scraper/runs/${runId}?token=${settings.apifyToken}`
       );
       if (statusRes.data.data.status === 'SUCCEEDED') break;
       if (statusRes.data.data.status === 'FAILED') return [];
@@ -108,7 +108,7 @@ const runResponse = await axios.post(
 
     // Get results
     const resultsRes = await axios.get(
-      `https://api.apify.com/v2/acts/apify~facebook-marketplace-scraper/runs/${runId}/dataset/items?token=${settings.apifyToken}`
+      `https://api.apify.com/v2/acts/crawlerbros~facebook-marketplace-scraper/runs/${runId}/dataset/items?token=${settings.apifyToken}`
     );
 
     return resultsRes.data
