@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DealHunter — Console Flip Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #00ff88;
+    --accent2: #ff3366;
+    --accent3: #ffaa00;
+    --text: #e8e8f0;
+    --muted: #6666aa;
+    --card-glow: 0 0 30px rgba(0,255,136,0.05);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+  }
+
+  .logo-text {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: all 0.3s;
+  }
+
+  .status-dot.active {
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  .status-dot.scanning {
+    background: var(--accent3);
+    box-shadow: 0 0 8px var(--accent3);
+    animation: pulse 0.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+
+  .stat-card:nth-child(2)::before { background: var(--accent3); }
+  .stat-card:nth-child(3)::before { background: var(--accent2); }
+  .stat-card:nth-child(4)::before { background: #aa88ff; }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .stat-value {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .stat-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+  }
+
+  /* SETTINGS PANEL */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-title {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .panel-body { padding: 24px; }
+
+  /* FORM ELEMENTS */
+  .field {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,255,136,0.1);
+  }
+
+  .price-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .tags-input {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    min-height: 48px;
+    cursor: text;
+  }
+
+  .tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,255,136,0.1);
+    border: 1px solid rgba(0,255,136,0.3);
+    color: var(--accent);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+  }
+
+  .tag-remove {
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 14px;
+    line-height: 1;
+    transition: opacity 0.2s;
+  }
+
+  .tag-remove:hover { opacity: 1; color: var(--accent2); }
+
+  .tag-input-field {
+    background: none;
+    border: none;
+    padding: 4px;
+    font-size: 13px;
+    min-width: 80px;
+    flex: 1;
+    box-shadow: none !important;
+  }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    width: 100%;
+    padding: 14px;
+    font-size: 14px;
+  }
+
+  .btn-primary:hover {
+    background: #00ffaa;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,255,136,0.3);
+  }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-scan {
+    background: var(--accent3);
+    color: #000;
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .btn-scan:hover {
+    background: #ffcc00;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(255,170,0,0.3);
+  }
+
+  .btn-scan:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+
+  .toggle-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .toggle {
+    position: relative;
+    width: 48px;
+    height: 26px;
+  }
+
+  .toggle input { display: none; }
+
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .toggle-slider::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    background: var(--muted);
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: all 0.3s;
+  }
+
+  .toggle input:checked + .toggle-slider {
+    background: rgba(0,255,136,0.2);
+    border-color: var(--accent);
+  }
+
+  .toggle input:checked + .toggle-slider::after {
+    transform: translateX(22px);
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* LISTINGS PANEL */
+  .listings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .listings-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .filter-btn.active, .filter-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,255,136,0.05);
+  }
+
+  .listings-list {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 700px;
+    overflow-y: auto;
+  }
+
+  .listings-list::-webkit-scrollbar { width: 4px; }
+  .listings-list::-webkit-scrollbar-track { background: var(--surface); }
+  .listings-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* LISTING CARD */
+  .listing-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: start;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .listing-card:hover {
+    border-color: rgba(0,255,136,0.3);
+    box-shadow: var(--card-glow);
+  }
+
+  .listing-card.new-listing {
+    border-color: rgba(0,255,136,0.4);
+    background: rgba(0,255,136,0.03);
+  }
+
+  .listing-card.new-listing::before {
+    content: 'NEW';
+    position: absolute;
+    top: 12px; right: 12px;
+    background: var(--accent);
+    color: #000;
+    font-size: 9px;
+    font-weight: 800;
+    font-family: 'Space Mono', monospace;
+    padding: 3px 7px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+
+  .listing-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    padding-right: 48px;
+  }
+
+  .listing-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .listing-price-block {
+    text-align: right;
+    min-width: 120px;
+  }
+
+  .listing-price {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .listing-profit {
+    font-size: 11px;
+    color: var(--accent3);
+    font-family: 'Space Mono', monospace;
+    margin-top: 4px;
+  }
+
+  .listing-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .btn-link {
+    padding: 6px 12px;
+    font-size: 11px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'Space Mono', monospace;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .btn-link:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .search-term-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-ps5 { background: rgba(0,100,255,0.15); color: #4488ff; border: 1px solid rgba(0,100,255,0.2); }
+  .badge-xbox { background: rgba(0,200,50,0.15); color: #00cc33; border: 1px solid rgba(0,200,50,0.2); }
+  .badge-other { background: rgba(255,170,0,0.15); color: var(--accent3); border: 1px solid rgba(255,170,0,0.2); }
+
+  .empty-state {
+    padding: 60px 24px;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+  .empty-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .empty-sub { font-size: 13px; font-family: 'Space Mono', monospace; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    z-index: 1000;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  .mock-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background: rgba(255,170,0,0.1);
+    border: 1px solid rgba(255,170,0,0.2);
+    border-radius: 4px;
+    font-size: 10px;
+    color: var(--accent3);
+    font-family: 'Space Mono', monospace;
+    margin-left: 6px;
+  }
+
+  @media (max-width: 1024px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 600px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .listing-card { grid-template-columns: 1fr; }
+    .listing-price-block { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🎮</div>
+      <div class="logo-text">Deal<span>Hunter</span></div>
+    </div>
+    <div class="header-right">
+      <div class="status-pill">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Idle</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total Found</div>
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-sub">all time</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Found Today</div>
+      <div class="stat-value" id="statToday">0</div>
+      <div class="stat-sub">listings</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Last Scan</div>
+      <div class="stat-value" style="font-size:20px" id="statLastScan">—</div>
+      <div class="stat-sub">check interval</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Status</div>
+      <div class="stat-value" style="font-size:20px" id="statStatus">Inactive</div>
+      <div class="stat-sub">scanner</div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- SETTINGS -->
+    <div>
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-header">
+          <span class="panel-title">⚡ Scanner Control</span>
+        </div>
+        <div class="panel-body">
+          <button class="btn btn-scan" id="scanBtn" onclick="triggerScan()">
+            🔍 Scan Now
+          </button>
+          <button class="btn btn-secondary" style="width:100%" onclick="clearListings()">
+            🗑 Clear All Listings
+          </button>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Auto Scan</div>
+              <div style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:2px">Run on schedule</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="activeToggle" onchange="toggleActive()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">⚙️ Settings</span>
+          <button class="btn btn-secondary" style="padding:6px 14px;font-size:11px" onclick="saveSettings()">Save</button>
+        </div>
+        <div class="panel-body">
+
+          <div class="field">
+            <label>Search Terms</label>
+            <div class="tags-input" id="tagsContainer" onclick="document.getElementById('tagInput').focus()">
+            </div>
+            <input type="text" id="tagInput" class="tag-input-field" placeholder="Add term + Enter" 
+              onkeydown="handleTagInput(event)" style="margin-top:8px">
+          </div>
+
+          <div class="field">
+            <label>Price Range (ZAR)</label>
+            <div class="price-row">
+              <div>
+                <input type="number" id="minPrice" placeholder="Min (e.g. 5000)">
+              </div>
+              <div>
+                <input type="number" id="maxPrice" placeholder="Max (e.g. 7500)">
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Location</label>
+            <input type="text" id="location" placeholder="e.g. Stellenbosch">
+          </div>
+
+          <div class="field">
+            <label>Search Radius (km)</label>
+            <input type="number" id="radiusKm" placeholder="e.g. 50">
+          </div>
+
+          <div class="field">
+            <label>Check Interval (minutes)</label>
+            <select id="checkInterval">
+              <option value="15">Every 15 minutes</option>
+              <option value="30">Every 30 minutes</option>
+              <option value="60" selected>Every hour</option>
+              <option value="120">Every 2 hours</option>
+              <option value="360">Every 6 hours</option>
+            </select>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="field">
+            <label>📱 WhatsApp Number</label>
+            <input type="text" id="whatsappTo" placeholder="+27XXXXXXXXX">
+          </div>
+
+          <div class="field">
+            <label>Twilio Account SID</label>
+            <input type="text" id="twilioSid" placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+          </div>
+
+          <div class="field">
+            <label>Twilio Auth Token</label>
+            <input type="password" id="twilioToken" placeholder="Your auth token">
+          </div>
+
+          <div class="field">
+            <label>Apify API Token</label>
+            <input type="password" id="apifyToken" placeholder="Your Apify token">
+          </div>
+
+          <button class="btn btn-primary" onclick="saveSettings()">
+            💾 Save Settings
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTINGS -->
+    <div class="panel">
+      <div class="panel-header listings-header">
+        <span class="panel-title">📋 Listings</span>
+        <span class="listings-count" id="listingsCount">0 listings</span>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="filterListings('all', this)">All</button>
+        <button class="filter-btn" onclick="filterListings('PS5', this)">PS5</button>
+        <button class="filter-btn" onclick="filterListings('Xbox', this)">Xbox</button>
+        <button class="filter-btn" onclick="filterListings('new', this)">New Only</button>
+      </div>
+      <div class="listings-list" id="listingsList">
+        <div class="empty-state">
+          <div class="empty-icon">🎮</div>
+          <div class="empty-title">No listings yet</div>
+          <div class="empty-sub">Hit "Scan Now" to find deals</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let allListings = [];
+let currentFilter = 'all';
+let searchTerms = ['PS5', 'PlayStation 5', 'Xbox Series X', 'Xbox Series S'];
+let pollInterval;
+
+// ============================================
+// INIT
+// ============================================
+async function init() {
+  await loadSettings();
+  await refreshListings();
+  startPolling();
+}
+
+function startPolling() {
+  pollInterval = setInterval(async () => {
+    await refreshListings();
+    await updateStatus();
+  }, 15000);
+}
+
+// ============================================
+// SETTINGS
+// ============================================
+async function loadSettings() {
+  try {
+    const res = await fetch('/api/settings');
+    const s = await res.json();
+
+    searchTerms = s.searchTerms || [];
+    renderTags();
+
+    document.getElementById('minPrice').value = s.minPrice || 5000;
+    document.getElementById('maxPrice').value = s.maxPrice || 7500;
+    document.getElementById('location').value = s.location || 'Stellenbosch';
+    document.getElementById('radiusKm').value = s.radiusKm || 50;
+    document.getElementById('whatsappTo').value = s.whatsappTo || '';
+    document.getElementById('twilioSid').value = s.twilioSid || '';
+    document.getElementById('twilioToken').value = s.twilioToken || '';
+    document.getElementById('apifyToken').value = s.apifyToken || '';
+    document.getElementById('checkInterval').value = s.checkInterval || 60;
+    document.getElementById('activeToggle').checked = s.active || false;
+  } catch(e) {
+    console.error('Load settings error:', e);
+  }
+}
+
+async function saveSettings() {
+  const settings = {
+    searchTerms,
+    minPrice: parseInt(document.getElementById('minPrice').value) || 5000,
+    maxPrice: parseInt(document.getElementById('maxPrice').value) || 7500,
+    location: document.getElementById('location').value || 'Stellenbosch',
+    radiusKm: parseInt(document.getElementById('radiusKm').value) || 50,
+    whatsappTo: document.getElementById('whatsappTo').value,
+    twilioSid: document.getElementById('twilioSid').value,
+    twilioToken: document.getElementById('twilioToken').value,
+    apifyToken: document.getElementById('apifyToken').value,
+    checkInterval: parseInt(document.getElementById('checkInterval').value) || 60,
+    active: document.getElementById('activeToggle').checked,
+  };
+
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    });
+    showToast('✅ Settings saved!');
+  } catch(e) {
+    showToast('❌ Failed to save settings');
+  }
+}
+
+async function toggleActive() {
+  await saveSettings();
+  const active = document.getElementById('activeToggle').checked;
+  showToast(active ? '✅ Auto-scan enabled' : '⏸ Auto-scan paused');
+}
+
+// ============================================
+// TAGS
+// ============================================
+function renderTags() {
+  const container = document.getElementById('tagsContainer');
+  container.innerHTML = searchTerms.map(t => `
+    <span class="tag">
+      ${t}
+      <span class="tag-remove" onclick="removeTag('${t}')">×</span>
+    </span>
+  `).join('');
+}
+
+function removeTag(term) {
+  searchTerms = searchTerms.filter(t => t !== term);
+  renderTags();
+}
+
+function handleTagInput(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim();
+    if (val && !searchTerms.includes(val)) {
+      searchTerms.push(val);
+      renderTags();
+    }
+    e.target.value = '';
+  }
+}
+
+// ============================================
+// SCAN
+// ============================================
+async function triggerScan() {
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Scanning...';
+
+  try {
+    await fetch('/api/scan', { method: 'POST' });
+    showToast('🔍 Scan started — check back in a moment');
+
+    setTimeout(async () => {
+      await refreshListings();
+      btn.disabled = false;
+      btn.textContent = '🔍 Scan Now';
+    }, 8000);
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '🔍 Scan Now';
+    showToast('❌ Scan failed');
+  }
+}
+
+// ============================================
+// LISTINGS
+// ============================================
+async function refreshListings() {
+  try {
+    const res = await fetch('/api/listings');
+    const data = await res.json();
+    allListings = data.listings || [];
+
+    document.getElementById('statTotal').textContent = data.total || 0;
+    document.getElementById('listingsCount').textContent = `${data.total || 0} listings`;
+
+    updateStatus(data);
+    renderListings();
+  } catch(e) {}
+}
+
+async function updateStatus(data) {
+  try {
+    const res = data || await (await fetch('/api/status')).json();
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    const statStatus = document.getElementById('statStatus');
+    const statToday = document.getElementById('statToday');
+    const statLastScan = document.getElementById('statLastScan');
+
+    if (res.isScanning) {
+      dot.className = 'status-dot scanning';
+      text.textContent = 'Scanning...';
+      statStatus.textContent = 'Scanning';
+    } else if (res.active) {
+      dot.className = 'status-dot active';
+      text.textContent = 'Active';
+      statStatus.textContent = 'Active';
+    } else {
+      dot.className = 'status-dot';
+      text.textContent = 'Idle';
+      statStatus.textContent = 'Idle';
+    }
+
+    statToday.textContent = res.newToday || 0;
+
+    if (res.lastScan) {
+      const d = new Date(res.lastScan);
+      statLastScan.textContent = d.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+    }
+  } catch(e) {}
+}
+
+function renderListings() {
+  const container = document.getElementById('listingsList');
+  let filtered = allListings;
+
+  if (currentFilter === 'PS5') {
+    filtered = allListings.filter(l => l.title.toLowerCase().includes('ps5') || l.title.toLowerCase().includes('playstation'));
+  } else if (currentFilter === 'Xbox') {
+    filtered = allListings.filter(l => l.title.toLowerCase().includes('xbox'));
+  } else if (currentFilter === 'new') {
+    filtered = allListings.filter(l => l.isNew);
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🎮</div>
+        <div class="empty-title">${currentFilter === 'all' ? 'No listings yet' : 'No ' + currentFilter + ' listings'}</div>
+        <div class="empty-sub">Hit "Scan Now" to find deals</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(l => {
+    const retailPrice = l.title.toLowerCase().includes('series s') ? 7999 :
+                       l.title.toLowerCase().includes('xbox') ? 14999 : 13699;
+    const flipPrice = Math.round(l.price * 1.35);
+    const profit = flipPrice - l.price;
+
+    const badgeClass = l.title.toLowerCase().includes('ps5') || l.title.toLowerCase().includes('playstation')
+      ? 'badge-ps5' : l.title.toLowerCase().includes('xbox') ? 'badge-xbox' : 'badge-other';
+
+    const timeAgo = getTimeAgo(l.foundAt);
+
+    return `
+      <div class="listing-card ${l.isNew ? 'new-listing' : ''}">
+        <div>
+          <div class="listing-title">
+            ${l.title}
+            ${l.isMock ? '<span class="mock-badge">DEMO</span>' : ''}
+          </div>
+          <div class="listing-meta">
+            <span class="search-term-badge ${badgeClass}">${l.searchTerm}</span>
+            <span class="meta-item">📍 ${l.location || 'Stellenbosch area'}</span>
+            <span class="meta-item">🕐 ${timeAgo}</span>
+          </div>
+          <div class="listing-actions">
+            <a href="${l.link}" target="_blank" class="btn-link">🔗 View Listing</a>
+          </div>
+        </div>
+        <div class="listing-price-block">
+          <div class="listing-price">R${l.price.toLocaleString()}</div>
+          <div class="listing-profit">+R${profit.toLocaleString()} profit</div>
+          <div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:2px">
+            Flip → R${flipPrice.toLocaleString()}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function filterListings(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderListings();
+}
+
+async function clearListings() {
+  if (!confirm('Clear all listings? This cannot be undone.')) return;
+  await fetch('/api/listings', { method: 'DELETE' });
+  allListings = [];
+  renderListings();
+  showToast('🗑 Listings cleared');
+}
+
+// ============================================
+// HELPERS
+// ============================================
+function getTimeAgo(dateStr) {
+  if (!dateStr) return 'Unknown';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs/24)}d ago`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>
