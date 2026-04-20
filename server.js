@@ -84,15 +84,15 @@ async function fetchFacebookListings(searchTerm) {
     const marketplaceUrl = `https://www.facebook.com/marketplace/stellenbosch/search?query=${encodedTerm}&minPrice=${settings.minPrice}&maxPrice=${settings.maxPrice}`;
 
     // Call Apify Facebook Marketplace scraper
-    const runResponse = await axios.post(
-      `https://api.apify.com/v2/acts/curious_coder~facebook-marketplace/runs?token=${settings.apifyToken}`,
-      {
-        startUrls: [{ url: marketplaceUrl }],
-        maxItems: 50,
-        proxy: { useApifyProxy: true }
-      },
-      { timeout: 30000 }
-    );
+const runResponse = await axios.post(
+  `https://api.apify.com/v2/acts/curious_coder~facebook-marketplace/runs?token=${settings.apifyToken}`,
+  {
+    urls: [marketplaceUrl],
+    maxItems: 50,
+    proxy: { useApifyProxy: true, apifyProxyGroups: ['RESIDENTIAL'] }
+  },
+  { timeout: 30000 }
+);
 
     const runId = runResponse.data.data.id;
 
