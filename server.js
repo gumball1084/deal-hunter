@@ -87,9 +87,12 @@ async function fetchFacebookListings(searchTerm) {
 const runResponse = await axios.post(
   `https://api.apify.com/v2/acts/crawlerbros~facebook-marketplace-scraper/runs?token=${settings.apifyToken}`,
   {
-    urls: [marketplaceUrl],
-    maxItems: 50,
-    proxy: { useApifyProxy: true, apifyProxyGroups: ['RESIDENTIAL'] }
+    startUrls: [{ url: marketplaceUrl }],
+    resultsLimit: 50,
+    proxyConfiguration: {
+      useApifyProxy: true,
+      apifyProxyGroups: ['RESIDENTIAL']
+    }
   },
   { timeout: 30000 }
 );
