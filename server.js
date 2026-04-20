@@ -8,7 +8,6 @@ const fs = require('fs');
 
 const app = express();
 app.use(express.json());
-app.use(express.static('public'));
 
 // ============================================
 // SETTINGS FILE — persists your configuration
@@ -336,6 +335,8 @@ app.get('/api/status', (req, res) => {
 });
 
 // Serve dashboard
+app.use(express.static('public'));
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
