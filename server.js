@@ -42,6 +42,9 @@ function saveSettings(settings) {
 }
 
 let settings = loadSettings();
+if (!settings.apifyToken) settings.apifyToken = process.env.APIFY_TOKEN || '';
+if (!settings.twilioSid) settings.twilioSid = process.env.TWILIO_SID || '';
+if (!settings.twilioToken) settings.twilioToken = process.env.TWILIO_AUTH_TOKEN || '';
 
 // ============================================
 // LISTINGS STORE
@@ -82,7 +85,7 @@ async function fetchFacebookListings(searchTerm) {
 
     // Call Apify Facebook Marketplace scraper
     const runResponse = await axios.post(
-      `https://api.apify.com/v2/acts/apify~facebook-marketplace-scraper/runs?token=${settings.apifyToken}`,
+      `https://api.apify.com/v2/acts/curious_coder~facebook-marketplace/runs?token=${settings.apifyToken}`,
       {
         startUrls: [{ url: marketplaceUrl }],
         maxItems: 50,
