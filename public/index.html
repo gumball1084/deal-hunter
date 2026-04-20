@@ -187,7 +187,7 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 20px;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .panel-header {
@@ -470,8 +470,8 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    max-height: 700px;
-    overflow-y: auto;
+    min-height: 200px;
+    overflow-y: visible;
   }
 
   .listings-list::-webkit-scrollbar { width: 4px; }
