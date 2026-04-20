@@ -114,17 +114,29 @@ async function fetchFacebookListings(searchTerm) {
         const price = parseInt(item.price?.replace(/[^0-9]/g, '') || '0');
         return price >= settings.minPrice && price <= settings.maxPrice;
       })
-      .map(item => ({
-        id: item.id || item.url || `${item.title}-${item.price}`,
-        title: item.title || item.name || 'Unknown',
-        price: parseInt(item.price?.replace(/[^0-9]/g, '') || '0'),
-        location: item.location || settings.location,
-        image: item.image || item.thumbnail || null,
-        link: item.url || item.link || '#',
-        searchTerm,
-        foundAt: new Date().toISOString(),
-        isNew: true,
-      }));
+      .map(item => {
+        const rawLink = item.url || item.link || '';
+        const itemId = item.id || item.listing_id || '';
+        let fullLink = rawLink;
+        if (itemId && !rawLink.includes('facebook.com')) {
+          fullLink = `https://www.facebook.com/marketplace/item/${itemId}/`;
+        } else if (rawLink && !rawLink.startsWith('http')) {
+          fullLink = `https://www.facebook.com${rawLink}`;
+        } else if (!rawLink) {
+          fullLink = `https://www.facebook.com/marketplace/stellenbosch/search/?query=${encodeURIComponent(item.title || searchTerm)}`;
+        }
+        return {
+          id: itemId || rawLink || `${item.title}-${item.price}`,
+          title: item.title || item.name || 'Unknown',
+          price: parseInt(item.price?.replace(/[^0-9]/g, '') || '0'),
+          location: item.location || item.city || settings.location,
+          image: item.image || item.thumbnail || item.photo || null,
+          link: fullLink,
+          searchTerm,
+          foundAt: new Date().toISOString(),
+          isNew: true,
+        };
+      });
 
   } catch (error) {
     console.error(`Apify error for "${searchTerm}":`, error.message);
@@ -294,6 +306,12 @@ app.post('/api/scan', async (req, res) => {
   runScan();
 });
 
+// Stop scanning
+app.post('/api/scan/stop', (req, res) => {
+  isScanning = false;
+  res.json({ success: true, message: 'Scan stopped' });
+});
+
 // Clear listings
 app.delete('/api/listings', (req, res) => {
   allListings = [];
@@ -325,7 +343,7 @@ app.get('/', (req, res) => {
 // ============================================
 // START SERVER
 // ============================================
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`\n🎮 DealHunter Dashboard`);
   console.log(`================================`);
