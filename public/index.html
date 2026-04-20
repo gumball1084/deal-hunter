@@ -357,6 +357,21 @@
     transform: none;
   }
 
+  .btn-stop {
+    background: var(--accent2);
+    color: #fff;
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 12px;
+    display: none;
+  }
+
+  .btn-stop:hover {
+    background: #ff5580;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(255,51,102,0.3);
+  }
+
   .toggle-row {
     display: flex;
     align-items: center;
@@ -705,6 +720,9 @@
           <button class="btn btn-scan" id="scanBtn" onclick="triggerScan()">
             🔍 Scan Now
           </button>
+          <button class="btn btn-stop" id="stopBtn" onclick="stopScan()">
+            ⏹ Stop Scanning
+          </button>
           <button class="btn btn-secondary" style="width:100%" onclick="clearListings()">
             🗑 Clear All Listings
           </button>
@@ -940,8 +958,10 @@ function handleTagInput(e) {
 // ============================================
 async function triggerScan() {
   const btn = document.getElementById('scanBtn');
+  const stopBtn = document.getElementById('stopBtn');
   btn.disabled = true;
   btn.textContent = '⏳ Scanning...';
+  stopBtn.style.display = 'block';
 
   try {
     await fetch('/api/scan', { method: 'POST' });
@@ -951,11 +971,27 @@ async function triggerScan() {
       await refreshListings();
       btn.disabled = false;
       btn.textContent = '🔍 Scan Now';
+      stopBtn.style.display = 'none';
     }, 8000);
   } catch(e) {
     btn.disabled = false;
     btn.textContent = '🔍 Scan Now';
+    stopBtn.style.display = 'none';
     showToast('❌ Scan failed');
+  }
+}
+
+async function stopScan() {
+  const btn = document.getElementById('scanBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  try {
+    await fetch('/api/scan/stop', { method: 'POST' });
+    btn.disabled = false;
+    btn.textContent = '🔍 Scan Now';
+    stopBtn.style.display = 'none';
+    showToast('⏹ Scan stopped');
+  } catch(e) {
+    showToast('❌ Failed to stop scan');
   }
 }
 
